@@ -1,0 +1,296 @@
+<html>
+
+<head>
+
+  <!-- Bootstrap core CSS -->
+  <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap theme -->
+  <link href="bootstrap/css/bootstrap-theme.min.css" rel="stylesheet">
+
+  <!-- Bootstrap core JavaScript -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script>
+    window.jQuery || document.write('<script src="jquery.min.js"><\/script>')
+  </script>
+  <script src="bootstrap/js/bootstrap.min.js"></script>
+
+  <script src="resumable.js"></script>
+  <script>
+    var filesToUpload = [];
+    var r = new Resumable({
+      target: 'chunkUpload.php'
+    });
+    function upload() {
+      console.log("uploading", filesToUpload);
+      r.upload();
+      filesToUpload = [];
+
+      // clear the "to-upload" list //
+      // $('#dropTarget').empty();
+    }
+    function loadResumable(init) {
+
+      if(!init){ 
+      }
+
+      // delete r;
+
+      r = new Resumable({
+        target: 'chunkUpload.php'
+      });
+
+      r.assignBrowse(document.getElementById('browseButton'));
+      r.assignDrop(document.getElementById('dropTarget'));
+      
+
+      r.on('fileSuccess', function (file) {
+        console.log('fileSuccess', file);
+      });
+      r.on('fileProgress', function (file) {
+        console.log('fileProgress', file);
+      });
+      r.on('fileAdded', function (file, event) {
+        //r.upload();
+
+        //add to 'Hier hochzuladene Dateien reinziehen'
+        var drop_list = $("#dropTarget");
+        var file_size_mb = (file.size / 1000000.0).toFixed(2);
+        drop_list.append(file.fileName + " " + file_size_mb + "mb<br>");
+
+        console.log('fileAdded', event);
+      });
+      r.on('filesAdded', function (array) {
+        //r.upload();
+        for (var file of array) {
+          filesToUpload.push(file.fileName);
+        }
+        console.log('filesAdded', array);
+      });
+      r.on('fileRetry', function (file) {
+        console.log('fileRetry', file);
+      });
+      r.on('fileError', function (file, message) {
+        console.log('fileError', file, message);
+      });
+      r.on('uploadStart', function () {
+        console.log('uploadStart');
+      });
+      r.on('complete', function () {
+        refreshFileList();
+        clearUploadBox();
+
+        // reset total-progress-bar //
+        $('#total-progress-bar').css('width', '0%');
+        $('#total-progress-bar').css('aria-valuenow', 0);
+
+        loadResumable(false);
+
+        location.reload();  // TEMP!!!
+
+        console.log('complete');
+      });
+      r.on('progress', function () {
+        var total_progress = parseInt(r.progress() * 100.0, 10);
+        // console.log('progress', total_progress + '%');
+        $('#total-progress-bar').css('width', total_progress + '%');
+        $('#total-progress-bar').css('aria-valuenow', total_progress);
+      });
+      r.on('error', function (message, file) {
+        console.log('error', message, file);
+      });
+      r.on('pause', function () {
+        console.log('pause');
+      });
+      r.on('cancel', function () {
+        console.log('cancel');
+      });
+    }
+    function refreshFileList() {
+      //var fileListRef = document.getElementById("fileList");
+      var fileListNewRef = document.getElementById("file-list");
+      // remove current List (except for header) //
+
+
+      while(fileListNewRef.childNodes.length > 2){
+        fileListNewRef.removeChild(fileListNewRef.lastChild);
+      }
+
+
+      // fill new list //
+      var xmlhttp = new XMLHttpRequest();
+      xmlhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          var fileList = JSON.parse(this.responseText);
+          // list header //
+          // var list_header = document.createElement("lh");
+          // list_header.textContent = "Dateien";
+          // list_header.classname = "list-group-item";
+          // fileListNewRef.appendChild(list_header);
+
+          // list entries
+          for (const file of fileList) {
+            var list_entry = document.createElement("li");
+
+            // class name //
+            list_entry.className = "list-group-item";
+            // content: file name //
+            var li_content = file.name;
+            var li_link = document.createElement('a');
+            li_link.appendChild(document.createTextNode(li_content));
+            li_link.style = " cursor: pointer;";
+            addDownloadFunction(li_link, file);
+            list_entry.appendChild(li_link);
+
+            // content: file size //
+            var filesize_display = document.createElement('span');
+            filesize_display.textContent = file.size + "";
+            filesize_display.className = 'badge';
+
+            // delete button //
+            var delete_button = document.createElement('div');
+            delete_button.className = "glyphicon glyphicon-trash";
+            delete_button.style = "float:right; padding-left:10px; padding-right:10px; cursor: pointer;";
+            // a.menu_links { cursor: pointer; }
+            addDeleteFunction(delete_button, file);
+            // <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+            list_entry.appendChild(delete_button);
+
+            // append //
+            list_entry.appendChild(filesize_display);
+
+            fileListNewRef.appendChild(list_entry);
+          }
+        }
+      };
+      xmlhttp.open("GET", "chunkUpload.php?fileList=true", true);
+      xmlhttp.send();
+    }
+    function addDeleteFunction(element, file) {
+      element.addEventListener("click", function () {
+        console.log("delete", file.name);
+        deleteFile(file.name);
+      });
+    }
+    function addDownloadFunction(element, file) {
+      element.addEventListener('click', function () {
+        var xmlhttpDL = new XMLHttpRequest();
+        xmlhttpDL.onload = function (e) {
+          var blob = new Blob([this.response], { type: 'file' });
+          let a = document.createElement("a");
+          a.style = "display: none";
+          document.body.appendChild(a);
+          let url = window.URL.createObjectURL(blob);
+          a.href = url;
+          a.download = file.name;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        };
+        xmlhttpDL.open("POST", "chunkUpload.php?download=true", true);
+        xmlhttpDL.responseType = 'blob';
+        xmlhttpDL.send(file.name);
+      }, false);
+    }
+    function deleteFile(filename) {
+      var xmlhttp = new XMLHttpRequest();
+      xmlhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          refreshFileList();
+        }
+      };
+      xmlhttp.open("DELETE", "chunkUpload.php", true);
+      xmlhttp.send(filename);
+    }
+    function clearUploadBox(){
+      var container = document.getElementById('dropTarget');
+      while(container.childNodes.length > 2){
+        container.removeChild(container.lastChild);
+      }
+    }
+  </script>
+</head>
+
+<body onload="loadResumable(true); refreshFileList();">
+
+  <!-- ======== Page-Header-Bar ======== -->
+  <div class="container">
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+    </nav>
+  </div>
+
+
+  <!-- ======== Page-Header-Text ======== -->
+  <div class="container" style="padding-top:20px;">
+    <div class="row">
+      <div class="col-md-6">
+        <h1 class="page-header">Interner File-Server</h1>
+      </div>
+      <div class="col-md-6">
+        <!-- <button onclick="refreshFileList()" class="btn btn-lg btn-default"> -->
+          <!-- <div class="glyphicon glyphicon-refresh" style="float:right;"></div> -->
+        <!-- </button> -->
+      </div>
+    </div>
+  </div>
+  <div id="layout-container" class="container">
+    <div class="row">
+      <div class="col-md-6">
+        <!-- ======== File-List ======== -->
+        <div id="list-container">
+          <!-- looks better with -->
+          <!-- list -->
+          <ul id="file-list" class="list-group">
+            <lh name="file-list-header" class="list-group-item">
+              <b>
+                Dateinamen
+                <button onclick="refreshFileList()" class="btn btn-sm btn-default" style="float:right; padding-top:3px;">
+                  <div class="glyphicon glyphicon-refresh"></div>
+                </button>
+                <span style="float:right; padding-right:5px;">Groesse</span>
+              </b>
+            </lh>
+            <!-- <li class="list-group-item">File 1 <span class="badge">12mb</span></li> -->
+            <!-- <li class="list-group-item">File 2 <span class="badge"> 5mb</span></li> -->
+            <!-- <li class="list-group-item">File 3 <span class="badge"> 3mb</span></li> -->
+          </ul>
+        </div>
+      </div>
+      <!-- /col -->
+      <div class="col-md-6">
+        <!-- ======== Drag-Drop ======== -->
+        <div id="dragdrop-container">
+          <div id="dropTarget" style="border: 5px dashed #aaa; padding: 10px;">
+            <h3 style="margin: 0px; margin-bottom: 20px; color: #aaa;">Hier hochzuladende Dateien reinziehen</h3>
+          </div>
+        </div>
+        <!-- ======== Buttons ======== -->
+        <div id="button-container" style="padding-top: 10px;">
+          <!-- <a href="#" id="browseButton">Select files</a> -->
+          <button onclick="" id="browseButton" class="btn btn-lg btn-default">
+            <div class="glyphicon glyphicon-option-horizontal" style="padding-right:10px;"></div>Select files
+          </button>
+          <button onclick="upload()" class="btn btn-lg btn-default">
+            <div class="glyphicon glyphicon-upload" style="padding-right:10px;"></div>Start Upload
+          </button>
+        </div>
+      </div>
+      <!-- /col -->
+    </div>
+    <!-- /row -->
+  </div>
+  <!-- /layout-container -->
+
+  <!-- Progress-Bar  -->
+  <div id="progress-bar" class="container">
+    <h2>Uploading progress</h2>
+    <div class="progress">
+      <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+        style="width:0%">
+        <span class="sr-only">50% Complete</span>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>
