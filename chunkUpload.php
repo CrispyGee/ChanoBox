@@ -85,9 +85,10 @@ function getFileList(){
     $file_array = array_slice(scandir($upload_dir), 2);
     $files_json = "[";
     foreach ($file_array as $file_name) {
-        if (substr( $file_name, 0, 5 ) === "_temp")
+        if (substr( $file_name, 0, 5 ) !== "_temp") {
         $file_size = human_filesize(filesize($upload_dir . $file_name));
         $files_json .= "{\"name\":\"" . $file_name . "\",\"size\":\"" . $file_size . "\"},";
+        }
     }
     if (strlen($files_json) > 1){
     $files_json = substr($files_json, 0, -1);
