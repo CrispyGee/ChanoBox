@@ -234,7 +234,7 @@
     function addDeleteFunction(element, file) {
       element.addEventListener("click", function () {
         console.log("delete", file.name);
-        deleteFile(file.name);
+        deleteFile(file);
       });
     }
     function addDownloadFunction(element, file) {
@@ -256,15 +256,15 @@
         xmlhttpDL.send(file.name);
       }, false);
     }
-    function deleteFile(filename) {
+    function deleteFile(file) {
       var xmlhttp = new XMLHttpRequest();
       xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
           refreshFileList();
         }
       };
-      xmlhttp.open("POST", "deleteFile.php", true);
-      xmlhttp.send(filename);
+      xmlhttp.open("GET", "deleteFile.php?hash=" + file.hash, true);
+      xmlhttp.send();
     }
    
   </script>

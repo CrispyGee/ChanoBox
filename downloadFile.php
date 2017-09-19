@@ -30,7 +30,7 @@ function downloadFile(){
 	    readfile($file);
     }
     else {
-    	//header('HTTP/1.1 404 Not Found');
+    	header('HTTP/1.1 404 Not Found');
     }
     exit;
 }
