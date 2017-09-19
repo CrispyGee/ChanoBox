@@ -167,6 +167,24 @@
       over_container.appendChild(filename_link);
 
 
+
+      // -------- time-stamp badge -------- //
+      //bring die badges alle auf gleiche laenge
+      var file_timestamp_str = timeConverter(file.timestamp);
+      var missing_spaces = 16 - file_timestamp_str.length;
+      var space = "\u00A0";
+      for(var i = 0; i < missing_spaces; i++){
+        file_timestamp_str = space + file_timestamp_str;
+      }
+      var time_stamp_badge = document.createElement('span');
+      time_stamp_badge.textContent = file_timestamp_str;
+      time_stamp_badge.className = 'badge';
+      time_stamp_badge.style="font-family:monospace; background-color: #BBBBBB;";
+      time_stamp_badge.style.cssFloat = "right";
+      time_stamp_badge.style.marginLeft = "1%";
+
+
+
       // -------- file-size badge -------- //
       //bring die badges alle auf gleiche laenge
       var file_size_str = file.size;
@@ -180,18 +198,19 @@
       filesize_badge.className = 'badge';
       filesize_badge.style="font-family:monospace;";
       filesize_badge.style.cssFloat = "right";
-      filesize_badge.style.marginLeft = "5%";
+      filesize_badge.style.marginLeft = "1%";
       
 
 
       // -------- delete button -------- //
       var delete_button = document.createElement('div');
       delete_button.className = "glyphicon glyphicon-trash";
-      delete_button.style = "float:right; padding-left:10px; padding-right:10px; cursor: pointer;";
+      delete_button.style = "float:right; padding-left:2%; padding-right:10px; cursor: pointer;";
       // filesize_badge.style.cssFloat = "right";
       addDeleteFunction(delete_button, file);
       over_container.appendChild(delete_button);
       over_container.appendChild(filesize_badge);
+      over_container.appendChild(time_stamp_badge);
 
       
 
@@ -287,6 +306,21 @@
       xmlhttp.send();
     }
    
+    function timeConverter(UNIX_timestamp){
+      var a = new Date(UNIX_timestamp * 1000);
+      // var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      var year = a.getFullYear();
+      var month = a.getMonth() + 1;
+      var date = a.getDate();
+      var hour = a.getHours();
+      var min = a.getMinutes();
+      var sec = a.getSeconds();
+      var time = hour + ':' + min + ' ' + date + '.' + month + '.' + year;
+      return time;
+    }
+
+
+
   </script>
 </head>
 
