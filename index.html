@@ -175,7 +175,7 @@
           }
         }
       };
-      xmlhttp.open("GET", "chunkUpload.php?fileList=true", true);
+      xmlhttp.open("GET", "getFileList.php", true);
       xmlhttp.send();
     }
     function addDeleteFunction(element, file) {
@@ -198,7 +198,7 @@
           a.click();
           window.URL.revokeObjectURL(url);
         };
-        xmlhttpDL.open("POST", "chunkUpload.php?download=true", true);
+        xmlhttpDL.open("POST", "downloadFile.php", true);
         xmlhttpDL.responseType = 'blob';
         xmlhttpDL.send(file.name);
       }, false);
@@ -210,7 +210,7 @@
           refreshFileList();
         }
       };
-      xmlhttp.open("DELETE", "chunkUpload.php", true);
+      xmlhttp.open("POST", "deleteFile.php", true);
       xmlhttp.send(filename);
     }
     function clearUploadBox(){

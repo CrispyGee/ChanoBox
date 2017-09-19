@@ -1,7 +1,6 @@
 <?php
 
-$upload_dir = "/var/dateien/";
-$upload_dir_no_slash = substr($upload_dir, 0, -1);
+include 'upload_path.php';
 
 /**
  *
@@ -74,65 +73,9 @@ function createFileFromChunks($resumableIdentifier, $fileName, $chunkSize, $tota
 
 }
 
-function human_filesize($bytes, $decimals = 2) {
-  $sz = "BKMGTP";
-  $factor = floor((strlen($bytes) - 1) / 3);
-  return sprintf("%.{$decimals}f", $bytes / pow(1024, $factor)) . @$sz[$factor];
-}
-
-function getFileList(){
-    global $upload_dir;
-    $file_array = array_slice(scandir($upload_dir), 2);
-    $files_json = "[";
-    foreach ($file_array as $file_name) {
-        if (substr( $file_name, 0, 5 ) !== "_temp") {
-        $file_size = human_filesize(filesize($upload_dir . $file_name));
-        $files_json .= "{\"name\":\"" . $file_name . "\",\"size\":\"" . $file_size . "\"},";
-        }
-    }
-    if (strlen($files_json) > 1){
-    $files_json = substr($files_json, 0, -1);
-    }
-    $files_json .= "]";
-    echo $files_json;
-    header("HTTP/1.0 200 Ok");
-}
-
-function deleteFile(){
-    global $upload_dir;
-    $filename = file_get_contents("php://input");
-    $deleted = unlink($upload_dir . $filename);
-    echo $deleted;
-    header("HTTP/1.0 200 Ok");
-}
-
-function downloadFile(){
-    global $upload_dir;
-    //$filename = $_GET["file"];
-    $filename = file_get_contents("php://input");
-    $file = $upload_dir . $filename;
-    //                header("HTTP/1.0 200 Ok");
-    header('Content-Description: File Transfer');
-    header('Content-Type: application/octet-stream');
-    header("Content-Type: application/force-download");
-    header('Content-Disposition: attachment; filename=' . urlencode(basename($filename)));
-    // header('Content-Transfer-Encoding: binary');
-    header('Expires: 0');
-    header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-    header('Pragma: public');
-    header('Content-Length: ' . filesize($file));
-    ob_clean();
-    flush();
-    readfile($file);
-    exit;
-}
-
 //check if request is GET and the requested chunk exists or not. this makes testChunks work
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if(isset($_GET['fileList'])){
-        //_log("fileList is set");
-        getFileList();
-    }
+    
     else {
 
         if(!(isset($_GET['resumableIdentifier']) && trim($_GET['resumableIdentifier'])!='')){
@@ -152,16 +95,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             header("HTTP/1.0 208 Already Reported");
         }
 
-    }
-}
-
-else if ($_SERVER['REQUEST_METHOD'] === 'DELETE'){
-    deleteFile();
-}
-
-else if ($_SERVER['REQUEST_METHOD'] === 'POST'){
-    if (isset($_GET['download'])){
-        downloadFile();
     }
 }
 
