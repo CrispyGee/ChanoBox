@@ -125,7 +125,8 @@
       var li_link = document.createElement('a');
       li_link.appendChild(document.createTextNode(li_content));
       li_link.style = " cursor: pointer;";
-      addDownloadFunction(li_link, file);
+      li_link.href = "./downloadFile.php?hash=" + file.hash;
+      //addDownloadFunction(li_link, file);
       list_entry.appendChild(li_link);
 
       // content: file size //
@@ -199,7 +200,7 @@
           a.click();
           window.URL.revokeObjectURL(url);
         };
-        xmlhttpDL.open("POST", "downloadFile.php", true);
+        xmlhttpDL.open("POST", "downloadFile.php&hash=" + file.hash, true);
         xmlhttpDL.responseType = 'blob';
         xmlhttpDL.send(file.name);
       }, false);

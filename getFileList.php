@@ -24,7 +24,7 @@ function getFileList() {
         if (substr( $file_name, 0, 5 ) != "_temp" && strlen($file_name) > 32) {
         	$currentFile = new FileProperties();
 			$currentFile->size = human_filesize(filesize($upload_dir . $file_name));
-			$currentFile->hash = substr( $file_name, 0, 31);
+			$currentFile->hash = substr( $file_name, 0, 32);
 			$currentFile->name = substr( $file_name, 32, strlen($file_name)-1);
 			$currentFile->timestamp = filemtime($upload_dir . $file_name);
 			array_push($filePropertyArray, $currentFile);
