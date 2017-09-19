@@ -29,10 +29,7 @@
       // clear the "to-upload" list //
       // $('#dropTarget').empty();
     }
-    function loadResumable(init) {
-
-      if(!init){ 
-      }
+    function loadResumable() {
 
       // delete r;
 
@@ -52,11 +49,22 @@
       });
       r.on('fileAdded', function (file, event) {
         //r.upload();
+        console.log(file);
+        //====add to 'Hier hochzuladene Dateien reinziehen'====
+        // var drop_list = $("#dropTarget");
+        // var file_size_mb = (file.size / 1000000.0).toFixed(2);
+        // drop_list.append(file.fileName + " " + file_size_mb + "mb<br>");
+        var file_size_kb = (file.size / 1024.0).toFixed(2);
+        var file_size_mb = (file_size_kb / 1024.0).toFixed(2);
+        var file_size_gb = (file_size_gb / 1024.0).toFixed(2);
 
-        //add to 'Hier hochzuladene Dateien reinziehen'
-        var drop_list = $("#dropTarget");
-        var file_size_mb = (file.size / 1000000.0).toFixed(2);
-        drop_list.append(file.fileName + " " + file_size_mb + "mb<br>");
+        var fileListNewRef = document.getElementById("file-list");
+
+        var fileSimple = {name: file.fileName, size: file_size_mb + "M"};
+        var list_entry = createListEntry(fileSimple);
+        // var delete_button = list_entry.listChild;
+        // delete_button.style.hide();
+        fileListNewRef.appendChild(list_entry);
 
         console.log('fileAdded', event);
       });
@@ -84,7 +92,7 @@
         $('#total-progress-bar').css('width', '0%');
         $('#total-progress-bar').css('aria-valuenow', 0);
 
-        loadResumable(false);
+        loadResumable();
 
         location.reload();  // TEMP!!!
 
@@ -106,6 +114,38 @@
         console.log('cancel');
       });
     }
+
+    function createListEntry(file){
+      var list_entry = document.createElement("li");
+      // class name //
+      list_entry.className = "list-group-item";
+      // content: file name //
+      var li_content = file.name;
+      var li_link = document.createElement('a');
+      li_link.appendChild(document.createTextNode(li_content));
+      li_link.style = " cursor: pointer;";
+      addDownloadFunction(li_link, file);
+      list_entry.appendChild(li_link);
+
+      // content: file size //
+      var filesize_display = document.createElement('span');
+      filesize_display.textContent = file.size + "";
+      filesize_display.className = 'badge';
+
+      // delete button //
+      var delete_button = document.createElement('div');
+      delete_button.className = "glyphicon glyphicon-trash";
+      delete_button.style = "float:right; padding-left:10px; padding-right:10px; cursor: pointer;";
+      // a.menu_links { cursor: pointer; }
+      addDeleteFunction(delete_button, file);
+      // <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
+      list_entry.appendChild(delete_button);
+
+      // append //
+      list_entry.appendChild(filesize_display);
+      return list_entry;
+    }
+
     function refreshFileList() {
       //var fileListRef = document.getElementById("fileList");
       var fileListNewRef = document.getElementById("file-list");
@@ -130,35 +170,7 @@
 
           // list entries
           for (const file of fileList) {
-            var list_entry = document.createElement("li");
-
-            // class name //
-            list_entry.className = "list-group-item";
-            // content: file name //
-            var li_content = file.name;
-            var li_link = document.createElement('a');
-            li_link.appendChild(document.createTextNode(li_content));
-            li_link.style = " cursor: pointer;";
-            addDownloadFunction(li_link, file);
-            list_entry.appendChild(li_link);
-
-            // content: file size //
-            var filesize_display = document.createElement('span');
-            filesize_display.textContent = file.size + "";
-            filesize_display.className = 'badge';
-
-            // delete button //
-            var delete_button = document.createElement('div');
-            delete_button.className = "glyphicon glyphicon-trash";
-            delete_button.style = "float:right; padding-left:10px; padding-right:10px; cursor: pointer;";
-            // a.menu_links { cursor: pointer; }
-            addDeleteFunction(delete_button, file);
-            // <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
-            list_entry.appendChild(delete_button);
-
-            // append //
-            list_entry.appendChild(filesize_display);
-
+            var list_entry = createListEntry(file);
             fileListNewRef.appendChild(list_entry);
           }
         }
@@ -210,83 +222,67 @@
   </script>
 </head>
 
-<body onload="loadResumable(true); refreshFileList();">
+<body onload="loadResumable(); refreshFileList();">
 
-  <!-- ======== Page-Header-Bar ======== -->
   <div class="container">
-    <nav class="navbar navbar-inverse navbar-fixed-top">
-    </nav>
-  </div>
-
-
-  <!-- ======== Page-Header-Text ======== -->
-  <div class="container" style="padding-top:20px;">
-    <div class="row">
-      <div class="col-md-6">
+    <!-- ======== Page-Header-Bar ======== -->
+    <div class="container">
+      <nav class="navbar navbar-inverse navbar-fixed-top">
+      </nav>
+    </div>
+  
+  
+    <!-- ======== Page-Header-Text ======== -->
+    <div class="container" style="padding-top:20px;">
         <h1 class="page-header">Interner File-Server</h1>
-      </div>
-      <div class="col-md-6">
-        <!-- <button onclick="refreshFileList()" class="btn btn-lg btn-default"> -->
-          <!-- <div class="glyphicon glyphicon-refresh" style="float:right;"></div> -->
-        <!-- </button> -->
-      </div>
     </div>
-  </div>
-  <div id="layout-container" class="container">
-    <div class="row">
-      <div class="col-md-6">
-        <!-- ======== File-List ======== -->
-        <div id="list-container">
-          <!-- looks better with -->
-          <!-- list -->
-          <ul id="file-list" class="list-group">
-            <lh name="file-list-header" class="list-group-item">
-              <b>
-                Dateinamen
-                <button onclick="refreshFileList()" class="btn btn-sm btn-default" style="float:right; padding-top:3px;">
-                  <div class="glyphicon glyphicon-refresh"></div>
-                </button>
-                <span style="float:right; padding-right:5px;">Groesse</span>
-              </b>
-            </lh>
-            <!-- <li class="list-group-item">File 1 <span class="badge">12mb</span></li> -->
-            <!-- <li class="list-group-item">File 2 <span class="badge"> 5mb</span></li> -->
-            <!-- <li class="list-group-item">File 3 <span class="badge"> 3mb</span></li> -->
-          </ul>
-        </div>
-      </div>
-      <!-- /col -->
-      <div class="col-md-6">
-        <!-- ======== Drag-Drop ======== -->
-        <div id="dragdrop-container">
-          <div id="dropTarget" style="border: 5px dashed #aaa; padding: 10px;">
-            <h3 style="margin: 0px; margin-bottom: 20px; color: #aaa;">Hier hochzuladende Dateien reinziehen</h3>
-          </div>
-        </div>
-        <!-- ======== Buttons ======== -->
-        <div id="button-container" style="padding-top: 10px;">
-          <!-- <a href="#" id="browseButton">Select files</a> -->
-          <button onclick="" id="browseButton" class="btn btn-lg btn-default">
-            <div class="glyphicon glyphicon-option-horizontal" style="padding-right:10px;"></div>Select files
-          </button>
-          <button onclick="upload()" class="btn btn-lg btn-default">
-            <div class="glyphicon glyphicon-upload" style="padding-right:10px;"></div>Start Upload
-          </button>
-        </div>
-      </div>
-      <!-- /col -->
-    </div>
-    <!-- /row -->
-  </div>
-  <!-- /layout-container -->
 
-  <!-- Progress-Bar  -->
-  <div id="progress-bar" class="container">
-    <h2>Uploading progress</h2>
-    <div class="progress">
-      <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
-        style="width:0%">
-        <span class="sr-only">50% Complete</span>
+    <div id="content-container" class="container">
+      <!-- ======== File-List ======== -->
+      <div id="list-container">
+        <!-- looks better with -->
+        <!-- list -->
+        <ul id="file-list" class="list-group">
+          <lh name="file-list-header" class="list-group-item">
+            <b>
+              Dateinamen
+              <button onclick="refreshFileList()" class="btn btn-sm btn-default" style="float:right; padding-top:3px;">
+                <div class="glyphicon glyphicon-refresh"></div>
+              </button>
+              <span style="float:right; padding-right:5px;">Groesse</span>
+            </b>
+          </lh>
+          <!-- <li class="list-group-item">File 1 <span class="badge">12mb</span></li> -->
+          <!-- <li class="list-group-item">File 2 <span class="badge"> 5mb</span></li> -->
+          <!-- <li class="list-group-item">File 3 <span class="badge"> 3mb</span></li> -->
+        </ul>
+      </div>
+      <!-- ======== Drag-Drop ======== -->
+      <div id="dragdrop-container">
+        <div id="dropTarget" style="border: 5px dashed #aaa; padding: 10px;">
+          <h3 style="margin: 0px; margin-bottom: 20px; color: #aaa;">Hier hochzuladende Dateien reinziehen</h3>
+        </div>
+      </div>
+      <!-- ======== Buttons ======== -->
+      <div id="button-container" style="padding-top: 10px;">
+        <!-- <a href="#" id="browseButton">Select files</a> -->
+        <button onclick="" id="browseButton" class="btn btn-lg btn-default">
+          <div class="glyphicon glyphicon-option-horizontal" style="padding-right:10px;"></div>Select files
+        </button>
+        <button onclick="upload()" class="btn btn-lg btn-default">
+          <div class="glyphicon glyphicon-upload" style="padding-right:10px;"></div>Start Upload
+        </button>
+      </div>
+    </div><!-- /layout-container -->
+  
+    <!-- Progress-Bar  -->
+    <div id="progress-bar" class="container">
+      <h2>Uploading progress</h2>
+      <div class="progress">
+        <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+          style="width:0%">
+          <span class="sr-only">50% Complete</span>
+        </div>
       </div>
     </div>
   </div>
