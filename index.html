@@ -169,10 +169,17 @@
 
 
       // -------- file-size badge -------- //
+      var file_size_str = file.size;
+      if(file_size_str.length < 6){ // if leading zero is missing
+      var space = "\u00A0";
+        file_size_str = space + file_size_str; //add two white-spaces
+      }
       var filesize_badge = document.createElement('span');
-      filesize_badge.textContent = file.size + "";
+      filesize_badge.textContent = file_size_str;
       filesize_badge.className = 'badge';
+      filesize_badge.style="font-family:monospace;";
       filesize_badge.style.cssFloat = "right";
+      filesize_badge.style.marginLeft = "5%";
       
 
 
@@ -190,8 +197,9 @@
       // -------- progress bar -------- //
       var file_prog_cont = document.createElement("div");
       file_prog_cont.className = "progress";
-      // file_prog_cont.style.width = "100px";
-      // file_prog_cont.style.maxWidth = "100px";
+      file_prog_cont.style.width = "18%";
+      file_prog_cont.style.maxWidth = "18%";
+      file_prog_cont.style.cssFloat = "right";
       var file_prog_bar = document.createElement("div");
       file_prog_bar.className = "progress-bar";
       file_prog_cont.appendChild(file_prog_bar);
@@ -201,7 +209,7 @@
       file_prog_bar.setAttribute("aria-valuemax", "100");
       file_prog_bar.setAttribute("aria-valuenow", "0");
       file_prog_bar.style.width = "0%";
-      // over_container.appendChild(file_prog_cont);
+      over_container.appendChild(file_prog_cont);
 
 
 
@@ -311,17 +319,9 @@
               <span style="float:right; padding-right:5px;">Groesse</span>
             </b>
           </lh>
-          <!-- <li class="list-group-item">File 1 <span class="badge">12mb</span></li> -->
-          <!-- <li class="list-group-item">File 2 <span class="badge"> 5mb</span></li> -->
-          <!-- <li class="list-group-item">File 3 <span class="badge"> 3mb</span></li> -->
         </ul>
       </div>
-      <!-- ======== Drag-Drop ======== -->
-      <!-- <div id="dragdrop-container"> -->
-        <!-- <div id="lelnope" style="border: 5px dashed #aaa; padding: 10px;"> -->
-          <!-- <h3 style="margin: 0px; margin-bottom: 20px; color: #aaa;">Hier hochzuladende Dateien reinziehen</h3> -->
-        <!-- </div> -->
-      <!-- </div> -->
+      
       <!-- ======== Buttons ======== -->
       <div id="button-container" style="padding-top: 10px;">
         <button onclick="" id="browseButton" class="btn btn-lg btn-default">
