@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" style="height :100%;">
 <head>
 <meta charset="utf-8"/>
 
@@ -19,16 +19,18 @@
   <script src="resumable.js"></script>
   <script>
     var filesToUpload = [];
+    var fileListJSON;
     var r = new Resumable({
       target: 'chunkUpload.php'
     });
     function upload() {
       console.log("uploading", filesToUpload);
-      r.upload();
-      filesToUpload = [];
+      console.log("uploading resumable", r.files);
 
-      // clear the "to-upload" list //
-      // $('#dropTarget').empty();
+      if(filesToUpload.length > 0){
+        r.upload();
+        filesToUpload = [];
+      }
     }
     function loadResumable() {
 
@@ -49,9 +51,17 @@
         console.log('fileProgress', file);
       });
       r.on('fileAdded', function (file, event) {
-        //r.upload();
-        console.log(file);
-        //====add to 'Hier hochzuladene Dateien reinziehen'====
+
+        var upload = cancelResumableFile(file);
+        console.log('current files to upload', r.files);
+        if(!upload){
+          return;
+        }
+
+        // console.log("adding file: " + file + " ...");
+
+        var fileList = document.getElementById("file-list");
+
         // var drop_list = $("#dropTarget");
         // var file_size_mb = (file.size / 1000000.0).toFixed(2);
         // drop_list.append(file.fileName + " " + file_size_mb + "mb<br>");
@@ -59,22 +69,24 @@
         var file_size_mb = (file_size_kb / 1024.0).toFixed(2);
         var file_size_gb = (file_size_gb / 1024.0).toFixed(2);
 
-        var fileListNewRef = document.getElementById("file-list");
-
         var fileSimple = {name: file.fileName, size: file_size_mb + "M"};
         var list_entry = createListEntry(fileSimple);
         // var delete_button = list_entry.listChild;
         // delete_button.style.hide();
-        fileListNewRef.appendChild(list_entry);
+        fileList.appendChild(list_entry);
 
         console.log('fileAdded', event);
       });
       r.on('filesAdded', function (array) {
-        //r.upload();
+        console.log('filesAdded event starts', array);
         for (var file of array) {
-          filesToUpload.push(file.fileName);
+          var upload = cancelResumableFile(file);
+          if(upload){
+            console.log("upload true.. add to local list");
+            filesToUpload.push(file.fileName);
+          }
         }
-        console.log('filesAdded', array);
+        console.log('current files to upload', r.files);
       });
       r.on('fileRetry', function (file) {
         console.log('fileRetry', file);
@@ -87,15 +99,15 @@
       });
       r.on('complete', function () {
         refreshFileList();
-        clearUploadBox();
+        // clearUploadBox();
 
         // reset total-progress-bar //
         $('#total-progress-bar').css('width', '0%');
         $('#total-progress-bar').css('aria-valuenow', 0);
 
-        loadResumable();
+        // loadResumable();
 
-        //location.reload();  // TEMP!!!
+        // location.reload();  // TEMP!!!
 
         console.log('complete');
       });
@@ -116,35 +128,74 @@
       });
     }
 
+    function cancelResumableFile(file){
+      var upload = true;
+      for(var oldFile of fileListJSON){
+        if(oldFile.name == file.fileName) {
+          console.log("FILE " + file.fileName + " already exists. ABORT");
+          upload = false;
+          var indexToRemove = -1;
+          for(var i = 0; i < r.files.length; i++) {
+            if(r.files[i].fileName == file.fileName) {
+              indexToRemove = i;
+              break;
+            }
+          }
+          console.log('files before remove', r.files);
+          r.files.splice(i, 1);
+          console.log('files after remove', r.files);
+        }
+      }
+      return upload;
+    }
+
     function createListEntry(file){
       var list_entry = document.createElement("li");
-      // class name //
       list_entry.className = "list-group-item";
-      // content: file name //
+
+      // file name //
       var li_content = file.name;
-      var li_link = document.createElement('a');
-      li_link.appendChild(document.createTextNode(li_content));
-      li_link.style = " cursor: pointer;";
-      li_link.href = "./downloadFile.php?hash=" + file.hash;
-      //addDownloadFunction(li_link, file);
-      list_entry.appendChild(li_link);
+      var filename_link = document.createElement('a');
+      filename_link.className = "btn-link";
+      filename_link.appendChild(document.createTextNode(li_content));
+      filename_link.style = " cursor: pointer;";
+      filename_link.href = "./downloadFile.php?hash=" + file.hash;
+      list_entry.appendChild(filename_link);
 
       // content: file size //
-      var filesize_display = document.createElement('span');
-      filesize_display.textContent = file.size + "";
-      filesize_display.className = 'badge';
+      var filesize_badge = document.createElement('span');
+      filesize_badge.textContent = file.size + "";
+      filesize_badge.className = 'badge';
+
+      // upload progress //
+      var file_prog_cont = document.createElement("div");
+      file_prog_cont.className = "progress";
+      file_prog_cont.style.width = "180px";
+      file_prog_cont.style.display = "inline-flex";
+      var file_prog_bar = document.createElement("div");
+      file_prog_bar.className = "progress-bar";
+      file_prog_cont.appendChild(file_prog_bar);
+      // file_prog_bar.setAttribute("role", "progress");
+      // file_prog_bar.style.role = "progressbar";
+      // role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+            // style="width:0%"
+      file_prog_bar.setAttribute("aria-valuemin", "0");
+      file_prog_bar.setAttribute("aria-valuemax", "100");
+      file_prog_bar.setAttribute("aria-valuenow", "00");
+      file_prog_bar.style.width = "0%";
+      // list_entry.appendChild(file_prog_cont);
+
+      
 
       // delete button //
       var delete_button = document.createElement('div');
       delete_button.className = "glyphicon glyphicon-trash";
       delete_button.style = "float:right; padding-left:10px; padding-right:10px; cursor: pointer;";
-      // a.menu_links { cursor: pointer; }
       addDeleteFunction(delete_button, file);
-      // <span class="glyphicon glyphicon-trash" aria-hidden="true"></span>
       list_entry.appendChild(delete_button);
 
-      // append //
-      list_entry.appendChild(filesize_display);
+      // append badge //
+      list_entry.appendChild(filesize_badge);
       return list_entry;
     }
 
@@ -163,7 +214,7 @@
       var xmlhttp = new XMLHttpRequest();
       xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && this.status == 200) {
-          var fileList = JSON.parse(this.responseText);
+          fileListJSON = JSON.parse(this.responseText);
           // list header //
           // var list_header = document.createElement("lh");
           // list_header.textContent = "Dateien";
@@ -171,7 +222,7 @@
           // fileListNewRef.appendChild(list_header);
 
           // list entries
-          for (const file of fileList) {
+          for (const file of fileListJSON) {
             var list_entry = createListEntry(file);
             fileListNewRef.appendChild(list_entry);
           }
@@ -215,18 +266,13 @@
       xmlhttp.open("POST", "deleteFile.php", true);
       xmlhttp.send(filename);
     }
-    function clearUploadBox(){
-      var container = document.getElementById('dropTarget');
-      while(container.childNodes.length > 2){
-        container.removeChild(container.lastChild);
-      }
-    }
+   
   </script>
 </head>
 
-<body onload="loadResumable(); refreshFileList();">
+<body style="min-height: 100%;" onload="loadResumable(); refreshFileList();">
 
-  <div class="container">
+  <div id="dropTarget" class="container" style="height:100%;">
     <!-- ======== Page-Header-Bar ======== -->
     <div class="container">
       <nav class="navbar navbar-inverse navbar-fixed-top">
@@ -260,14 +306,13 @@
         </ul>
       </div>
       <!-- ======== Drag-Drop ======== -->
-      <div id="dragdrop-container">
-        <div id="dropTarget" style="border: 5px dashed #aaa; padding: 10px;">
-          <h3 style="margin: 0px; margin-bottom: 20px; color: #aaa;">Hier hochzuladende Dateien reinziehen</h3>
-        </div>
-      </div>
+      <!-- <div id="dragdrop-container"> -->
+        <!-- <div id="lelnope" style="border: 5px dashed #aaa; padding: 10px;"> -->
+          <!-- <h3 style="margin: 0px; margin-bottom: 20px; color: #aaa;">Hier hochzuladende Dateien reinziehen</h3> -->
+        <!-- </div> -->
+      <!-- </div> -->
       <!-- ======== Buttons ======== -->
       <div id="button-container" style="padding-top: 10px;">
-        <!-- <a href="#" id="browseButton">Select files</a> -->
         <button onclick="" id="browseButton" class="btn btn-lg btn-default">
           <div class="glyphicon glyphicon-option-horizontal" style="padding-right:10px;"></div>Select files
         </button>
@@ -283,11 +328,11 @@
       <div class="progress">
         <div id="total-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
           style="width:0%">
-          <span class="sr-only">50% Complete</span>
         </div>
       </div>
     </div>
-  </div>
+
+  </div><!-- /container -->
 
 </body>
 
