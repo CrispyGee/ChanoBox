@@ -60,7 +60,7 @@ function createFileFromChunks($resumableIdentifier, $fileName, $chunkSize, $tota
     // create the final destination file 
         if (($fp = fopen($upload_dir.$fileName, 'w')) !== false) {
             for ($i=1; $i<=$total_files; $i++) {
-                fwrite($fp, file_get_contents($upload_dir.'temp'.$resumableIdentifier.$fileName.'.part'.$i));
+                fwrite($fp, file_get_contents($upload_dir.'_temp'.$resumableIdentifier.$fileName.'.part'.$i));
                 //_log('writing chunk '.$i);
             }
             fclose($fp);
@@ -165,7 +165,6 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST'){
     }
 }
 
-// loop through files and move the chunks to a temporarily created directory
 if (!empty($_FILES)) foreach ($_FILES as $file) {
 
     // check the error status
