@@ -1,7 +1,7 @@
 <?php
 
 $upload_dir = "/var/dateien/";
-
+$upload_dir_no_slash = substr($upload_dir, 0, -1);
 
 /**
  *
@@ -21,28 +21,13 @@ function _log($str) {
     }
 }
 
-# DAS BRAUCHEN WIR NICHT. UND ES IST SEHR GEFAEHRLICH, WENN MAN DAS FALSCHE DIRECTORY ERWISCHT.
-/**
- * 
- * Delete a directory RECURSIVELY
- * @param string $dir - directory path
- * @link http://php.net/manual/en/function.rmdir.php
- */
-function rrmdir($dir) {
-    die("rmdir($dir) VERBOTEN");
-    if (is_dir($dir)) {
-        $objects = scandir($dir);
-        foreach ($objects as $object) {
-            if ($object != "." && $object != "..") {
-                if (filetype($dir . "/" . $object) == "dir") {
-                    rrmdir($dir . "/" . $object); 
-                } else {
-                    unlink($dir . "/" . $object);
-                }
-            }
+
+function removeTempFiles($dir) {
+    global $upload_dir;
+    foreach(scandir($upload_dir) as $file) {
+        if (0 === strpos($file, '_temp'.$resumableIdentifier)) {
+            unlink($upload_dir.$file);
         }
-        reset($objects);
-        rmdir($dir);
     }
 }
 
@@ -55,16 +40,19 @@ function rrmdir($dir) {
  * @param string $chunkSize - each chunk size (in bytes)
  * @param string $totalSize - original file size (in bytes)
  */
-function createFileFromChunks($temp_dir, $fileName, $chunkSize, $totalSize,$total_files) {
+function createFileFromChunks($resumableIdentifier, $fileName, $chunkSize, $totalSize,$total_files) {
 
     global $upload_dir;
     // count all the parts of this file
     $total_files_on_server_size = 0;
     $temp_total = 0;
-    foreach(scandir($temp_dir) as $file) {
+    foreach(scandir($upload_dir) as $file) {
+        if (0 === strpos($file, '_temp'.$resumableIdentifier)) {
+        // It starts with 'http'
         $temp_total = $total_files_on_server_size;
-        $tempfilesize = filesize($temp_dir.'/'.$file);
+        $tempfilesize = filesize($upload_dir.$file);
         $total_files_on_server_size = $temp_total + $tempfilesize;
+        }
     }
     // check that all the parts are present
     // If the Size of all the chunks on the server is equal to the size of the file uploaded.
@@ -72,7 +60,7 @@ function createFileFromChunks($temp_dir, $fileName, $chunkSize, $totalSize,$tota
     // create the final destination file 
         if (($fp = fopen($upload_dir.$fileName, 'w')) !== false) {
             for ($i=1; $i<=$total_files; $i++) {
-                fwrite($fp, file_get_contents($temp_dir.'/'.$fileName.'.part'.$i));
+                fwrite($fp, file_get_contents($upload_dir.'temp'.$resumableIdentifier.$fileName.'.part'.$i));
                 //_log('writing chunk '.$i);
             }
             fclose($fp);
@@ -81,13 +69,7 @@ function createFileFromChunks($temp_dir, $fileName, $chunkSize, $totalSize,$tota
             return false;
         }
 
-        // rename the temporary directory (to avoid access from other 
-        // concurrent chunks uploads) and than delete it
-        if (rename($temp_dir, $temp_dir.'_UNUSED')) {
-            rrmdir($temp_dir.'_UNUSED');
-        } else {
-            rrmdir($temp_dir);
-        }
+        removeTempFiles($resumableIdentifier);
     }
 
 }
@@ -103,6 +85,7 @@ function getFileList(){
     $file_array = array_slice(scandir($upload_dir), 2);
     $files_json = "[";
     foreach ($file_array as $file_name) {
+        if (substr( $file_name, 0, 5 ) === "_temp")
         $file_size = human_filesize(filesize($upload_dir . $file_name));
         $files_json .= "{\"name\":\"" . $file_name . "\",\"size\":\"" . $file_size . "\"},";
     }
@@ -154,14 +137,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if(!(isset($_GET['resumableIdentifier']) && trim($_GET['resumableIdentifier'])!='')){
             $_GET['resumableIdentifier']='';
         }
-        $temp_dir = $upload_dir.$_GET['resumableIdentifier'];
+        $resumableIdentifier = $_GET['resumableIdentifier'];
         if(!(isset($_GET['resumableFilename']) && trim($_GET['resumableFilename'])!='')){
             $_GET['resumableFilename']='';
         }
         if(!(isset($_GET['resumableChunkNumber']) && trim($_GET['resumableChunkNumber'])!='')){
             $_GET['resumableChunkNumber']='';
         }
-        $chunk_file = $temp_dir.'/'.$_GET['resumableFilename'].'.part'.$_GET['resumableChunkNumber'];
+        $chunk_file = $upload_dir."_temp".$resumableIdentifier.$_GET['resumableFilename'].'.part'.$_GET['resumableChunkNumber'];
         if (file_exists($chunk_file)) {
             header("HTTP/1.0 200 Ok");
         } else {
@@ -193,21 +176,16 @@ if (!empty($_FILES)) foreach ($_FILES as $file) {
     // init the destination file (format <filename.ext>.part<#chunk>
     // the file is stored in a temporary directory
     if(isset($_POST['resumableIdentifier']) && trim($_POST['resumableIdentifier'])!=''){
-        $temp_dir = $upload_dir.$_POST['resumableIdentifier'];
+        $resumableIdentifier = $_POST['resumableIdentifier'];
     }
-    $dest_file = $temp_dir.'/'.$_POST['resumableFilename'].'.part'.$_POST['resumableChunkNumber'];
-
-    // create the temporary directory
-    if (!is_dir($temp_dir)) {
-        mkdir($temp_dir, 0777, true);
-    }
+    $dest_file = $upload_dir."_temp".$resumableIdentifier.$_POST['resumableFilename'].'.part'.$_POST['resumableChunkNumber'];
 
     // move the temporary file
     if (!move_uploaded_file($file['tmp_name'], $dest_file)) {
         _log('Error saving (move_uploaded_file) chunk '.$_POST['resumableChunkNumber'].' for file '.$_POST['resumableFilename']);
     } else {
         // check if all the parts present, and create the final destination file
-        createFileFromChunks($temp_dir, $_POST['resumableFilename'],$_POST['resumableChunkSize'], $_POST['resumableTotalSize'],$_POST['resumableTotalChunks']);
+        createFileFromChunks($resumableIdentifier, $_POST['resumableFilename'],$_POST['resumableChunkSize'], $_POST['resumableTotalSize'],$_POST['resumableTotalChunks']);
     }
 }
 
