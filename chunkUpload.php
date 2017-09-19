@@ -74,27 +74,22 @@ function createFileFromChunks($resumableIdentifier, $fileName, $chunkSize, $tota
 }
 
 //check if request is GET and the requested chunk exists or not. this makes testChunks work
-if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    
-    else {
-
-        if(!(isset($_GET['resumableIdentifier']) && trim($_GET['resumableIdentifier'])!='')){
-            $_GET['resumableIdentifier']='';
-        }
-        $resumableIdentifier = $_GET['resumableIdentifier'];
-        if(!(isset($_GET['resumableFilename']) && trim($_GET['resumableFilename'])!='')){
-            $_GET['resumableFilename']='';
-        }
-        if(!(isset($_GET['resumableChunkNumber']) && trim($_GET['resumableChunkNumber'])!='')){
-            $_GET['resumableChunkNumber']='';
-        }
-        $chunk_file = $upload_dir."_temp".$resumableIdentifier.$_GET['resumableFilename'].'.part'.$_GET['resumableChunkNumber'];
-        if (file_exists($chunk_file)) {
-            header("HTTP/1.0 200 Ok");
-        } else {
-            header("HTTP/1.0 208 Already Reported");
-        }
-
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {   
+    if(!(isset($_GET['resumableIdentifier']) && trim($_GET['resumableIdentifier'])!='')){
+        $_GET['resumableIdentifier']='';
+    }
+    $resumableIdentifier = $_GET['resumableIdentifier'];
+    if(!(isset($_GET['resumableFilename']) && trim($_GET['resumableFilename'])!='')){
+        $_GET['resumableFilename']='';
+    }
+    if(!(isset($_GET['resumableChunkNumber']) && trim($_GET['resumableChunkNumber'])!='')){
+        $_GET['resumableChunkNumber']='';
+    }
+    $chunk_file = $upload_dir."_temp".$resumableIdentifier.$_GET['resumableFilename'].'.part'.$_GET['resumableChunkNumber'];
+    if (file_exists($chunk_file)) {
+        header("HTTP/1.0 200 Ok");
+    } else {
+        header("HTTP/1.0 208 Already Reported");
     }
 }
 
