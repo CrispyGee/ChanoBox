@@ -57,12 +57,15 @@ function createFileFromChunks($resumableIdentifier, $fileName, $chunkSize, $tota
     // If the Size of all the chunks on the server is equal to the size of the file uploaded.
     if ($total_files_on_server_size >= $totalSize) {
     // create the final destination file 
-        if (($fp = fopen($upload_dir.$fileName, 'w')) !== false) {
+        $filePath = $upload_dir.$fileName;
+        if (($fp = fopen($filePath, 'w')) !== false) {
             for ($i=1; $i<=$total_files; $i++) {
                 fwrite($fp, file_get_contents($upload_dir.'_temp'.$resumableIdentifier.$fileName.'.part'.$i));
                 //_log('writing chunk '.$i);
             }
             fclose($fp);
+            $hash = md5_file($filePath);
+            rename($filePath, $upload_dir.$hash.$fileName);
         } else {
             _log('cannot create the destination file');
             return false;
