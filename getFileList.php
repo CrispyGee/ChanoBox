@@ -31,7 +31,7 @@ function getFileList() {
         }
     }
     echo json_encode($filePropertyArray);
-    header("HTTP/1.0 200 Ok");
+    //header("HTTP/1.0 200 Ok");
 }
 
 getFileList();
