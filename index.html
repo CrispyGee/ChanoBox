@@ -76,7 +76,7 @@
         var file_size_mb = (file_size_kb / 1024.0).toFixed(2);
         var file_size_gb = (file_size_gb / 1024.0).toFixed(2);
 
-        var fileSimple = {name: file.fileName, size: file_size_mb + "M"};
+        var fileSimple = {name: file.fileName, timestamp: new Date().getTime()/1000 , size: file_size_mb + "M"};
         var list_entry = createListEntry(fileSimple, true);
         
         fileList.appendChild(list_entry);
