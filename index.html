@@ -28,7 +28,7 @@
     var filesToUpload = [];
     var fileListJSON;
     var r = new Resumable({
-      target: 'chunkUpload.php',
+      target: 'http://localhost:8082',
       simultaneousUploads: 1
     });
     function upload() {
@@ -42,7 +42,7 @@
     }
     function loadResumable() {
       r = new Resumable({
-        target: 'chunkUpload.php'
+        target: 'http://localhost:8082'
       });
 
       r.assignBrowse(document.getElementById('browseButton'));
