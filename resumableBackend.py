@@ -48,22 +48,15 @@ def createFileFromChunks(identifier, filename, total_size_client, total_chunks):
     print total_size_server
     # now check if all chunks are there and iteratively append to assemble actual file
     if total_size_server >= total_size_client:
-        print "assembling..."
         filePath = UPLOAD_DIR + filename
         with open(filePath, 'a') as assembledFile:
             for i in xrange(1, total_chunks+1):
-                print str(i) + ":"
                 chunkFilename = getChunkFilename(identifier, filename, str(i))
-                print chunkFilename
                 with open(chunkFilename, 'r') as chunk:
                     chunkData = chunk.read()
-                    print "assembling " + chunkData
                     assembledFile.write(chunkData)
-        print "calculating hash"
         md5_hash = md5(filePath)
-        print "renaming"
         os.rename(filePath, UPLOAD_DIR + md5_hash + filename)
-        print "removing temp files"
         removeChunkFiles(identifier, filename)
 
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
